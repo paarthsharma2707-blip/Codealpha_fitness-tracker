@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fitness Tracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface-alt: #f0efeb;
+      --border: rgba(0,0,0,0.09);
+      --border-strong: rgba(0,0,0,0.15);
+      --text-primary: #0b0b0b;
+      --text-secondary: #52514e;
+      --text-muted: #898781;
+      --radius: 8px;
+      --blue: #2a78d6;
+      --green: #1baf7a;
+      --amber: #eda100;
+      --purple: #4a3aa7;
+      --red: #e34948;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111110;
+        --surface: #1c1c1a;
+        --surface-alt: #242422;
+        --border: rgba(255,255,255,0.09);
+        --border-strong: rgba(255,255,255,0.15);
+        --text-primary: #ffffff;
+        --text-secondary: #c3c2b7;
+        --text-muted: #898781;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1.5rem 1rem;
+    }
+
+    .app { max-width: 680px; margin: 0 auto; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .header h1 { font-size: 20px; font-weight: 500; }
+    .header .date { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .log-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-size: 13px; color: var(--text-primary); cursor: pointer; transition: background 0.15s;
+    }
+    .log-btn:hover { background: var(--surface-alt); }
+    .log-btn i { font-size: 16px; color: var(--blue); }
+
+    .tabs {
+      display: flex; gap: 4px; background: var(--surface-alt);
+      border-radius: var(--radius); padding: 4px; margin-bottom: 1.25rem;
+    }
+    .tab {
+      flex: 1; padding: 7px 0; text-align: center; font-size: 13px;
+      border-radius: 6px; cursor: pointer; color: var(--text-secondary);
+      border: none; background: transparent; transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--surface); color: var(--text-primary);
+      font-weight: 500; border: 0.5px solid var(--border);
+    }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.25rem; }
+    @media (max-width: 480px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+    .metric { background: var(--surface-alt); border-radius: var(--radius); padding: 12px; text-align: center; }
+    .metric .val { font-size: 22px; font-weight: 500; }
+    .metric .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric .delta { font-size: 11px; margin-top: 4px; }
+    .delta.up { color: var(--green); }
+    .delta.down { color: var(--red); }
+
+    .section {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem;
+    }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title { font-size: 14px; font-weight: 500; }
+    .section-sub { font-size: 12px; color: var(--text-muted); }
+
+    .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .progress-row:last-child { margin-bottom: 0; }
+    .progress-label { font-size: 13px; color: var(--text-secondary); width: 80px; flex-shrink: 0; }
+    .progress-bar { flex: 1; height: 6px; background: var(--surface-alt); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+    .progress-pct { font-size: 12px; color: var(--text-muted); width: 36px; text-align: right; flex-shrink: 0; }
+
+    .activities { display: flex; flex-direction: column; }
+    .activity-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .activity-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .act-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px; }
+    .act-icon.walk  { background: #E6F1FB; color: #185FA5; }
+    .act-icon.run   { background: #EAF3DE; color: #3B6D11; }
+    .act-icon.bike  { background: #FAEEDA; color: #854F0B; }
+    .act-icon.gym   { background: #EEEDFE; color: #534AB7; }
+    .act-name { font-size: 14px; font-weight: 500; }
+    .act-time { font-size: 12px; color: var(--text-muted); }
+    .act-stats { margin-left: auto; text-align: right; }
+    .act-cal { font-size: 14px; font-weight: 500; }
+    .act-dur { font-size: 12px; color: var(--text-muted); }
+
+    .weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .day-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .day-bar-wrap { height: 100px; display: flex; align-items: flex-end; }
+    .day-bar { width: 28px; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.4s ease; }
+    .day-label { font-size: 10px; color: var(--text-muted); }
+    .day-steps { font-size: 10px; color: var(--text-secondary); }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35); z-index: 100;
+      align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: 16px 16px 0 0; padding: 1.5rem;
+      width: 100%; max-width: 680px;
+    }
+    .modal-title { font-size: 16px; font-weight: 500; margin-bottom: 1rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 12px; color: var(--text-secondary); }
+    .form-group input, .form-group select {
+      font-size: 14px; padding: 8px 10px; border-radius: var(--radius);
+      border: 0.5px solid var(--border-strong); background: var(--surface-alt);
+      color: var(--text-primary); outline: none; transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 1.25rem; }
+    .btn-primary {
+      flex: 1; padding: 11px; background: var(--text-primary); color: var(--surface);
+      border: none; border-radius: var(--radius); font-size: 14px; cursor: pointer;
+      font-weight: 500; transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-ghost {
+      padding: 11px 18px; background: transparent; color: var(--text-secondary);
+      border: 0.5px solid var(--border-strong); border-radius: var(--radius);
+      font-size: 14px; cursor: pointer;
+    }
+    .btn-ghost:hover { background: var(--surface-alt); }
+
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text-primary); color: var(--surface);
+      padding: 10px 18px; border-radius: var(--radius);
+      font-size: 13px; z-index: 200; transition: transform 0.25s ease;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>Good morning 👋</h1>
+      <div class="date" id="current-date"></div>
+    </div>
+    <button class="log-btn" onclick="openModal()">
+      <i class="ti ti-plus" aria-hidden="true"></i> Log activity
+    </button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab(this,'today')">Today</button>
+    <button class="tab" onclick="switchTab(this,'week')">This week</button>
+    <button class="tab" onclick="switchTab(this,'history')">History</button>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div id="tab-today">
+    <div class="metrics">
+      <div class="metric">
+        <div class="val" id="steps-val">7,420</div>
+        <div class="lbl">Steps</div>
+        <div class="delta up">↑ 12%</div>
+      </div>
+      <div class="metric">
+        <div class="val" id="cal-val">1,840</div>
+        <div class="lbl">Calories</div>
+        <div class="delta up">↑ 4%</div>
+      </div>
+      <div class="metric">
+        <div class="val" id="min-val">48</div>
+        <div class="lbl">Active min</div>
+        <div class="delta down">↓ 2%</div>
+      </div>
+      <div class="metric">
+        <div class="val">1.8L</div>
+        <div class="lbl">Water</div>
+        <div class="delta up">↑ on track</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Daily goals</span>
+        <span class="section-sub">3 of 4 on track</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Steps</span>
+        <div class="progress-bar"><div class="progress-fill" id="prog-steps" style="width:74%;background:var(--blue);"></div></div>
+        <span class="progress-pct" id="pct-steps">74%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Calories</span>
+        <div class="progress-bar"><div class="progress-fill" style="width:92%;background:var(--green);"></div></div>
+        <span class="progress-pct">92%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Active min</span>
+        <div class="progress-bar"><div class="progress-fill" id="prog-min" style="width:60%;background:var(--amber);"></div></div>
+        <span class="progress-pct" id="pct-min">60%</span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Water</span>
+        <div class="progress-bar"><div class="progress-fill" style="width:90%;background:var(--purple);"></div></div>
+        <span class="progress-pct">90%</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Today's activities</span>
+        <button class="log-btn" onclick="openModal()" style="padding:4px 10px;font-size:12px;">
+          <i class="ti ti-plus" aria-hidden="true"></i> Add
+        </button>
+      </div>
+      <div class="activities" id="activities-list">
+        <div class="activity-row">
+          <div class="act-icon walk"><i class="ti ti-walk" aria-hidden="true"></i></div>
+          <div><div class="act-name">Morning walk</div><div class="act-time">7:15 AM</div></div>
+          <div class="act-stats"><div class="act-cal">210 kcal</div><div class="act-dur">35 min · 3.2 km</div></div>
+        </div>
+        <div class="activity-row">
+          <div class="act-icon gym"><i class="ti ti-barbell" aria-hidden="true"></i></div>
+          <div><div class="act-name">Weight training</div><div class="act-time">12:30 PM</div></div>
+          <div class="act-stats"><div class="act-cal">380 kcal</div><div class="act-dur">50 min</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK TAB -->
+  <div id="tab-week" style="display:none;">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Steps this week</span>
+        <span class="section-sub">Avg 8,240 / day</span>
+      </div>
+      <div class="weekly-grid">
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:65%;background:var(--blue);"></div></div>
+          <div class="day-label">Mon</div><div class="day-steps">8,100</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:80%;background:var(--blue);"></div></div>
+          <div class="day-label">Tue</div><div class="day-steps">10,200</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:55%;background:var(--blue);"></div></div>
+          <div class="day-label">Wed</div><div class="day-steps">6,800</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:90%;background:var(--blue);"></div></div>
+          <div class="day-label">Thu</div><div class="day-steps">11,500</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:70%;background:var(--blue);"></div></div>
+          <div class="day-label">Fri</div><div class="day-steps">9,000</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:48%;background:var(--blue);"></div></div>
+          <div class="day-label">Sat</div><div class="day-steps">5,900</div>
+        </div>
+        <div class="day-col">
+          <div class="day-bar-wrap"><div class="day-bar" style="height:58%;background:var(--purple);opacity:0.6;"></div></div>
+          <div class="day-label" style="font-weight:500;">Sun</div>
+          <div class="day-steps">7,420</div>
+        </div>
+      </div>
+    </div>
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);">
+      <div class="metric"><div class="val">5</div><div class="lbl">Workouts</div><div class="delta up">↑ vs last week</div></div>
+      <div class="metric"><div class="val">11.2k</div><div class="lbl">Calories</div><div class="delta up">↑ 8%</div></div>
+      <div class="metric"><div class="val">3h 40m</div><div class="lbl">Active time</div><div class="delta up">↑ on pace</div></div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" style="display:none;">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">All activities</span>
+      </div>
+      <div class="activities" id="history-list">
+        <div class="activity-row">
+          <div class="act-icon walk"><i class="ti ti-walk" aria-hidden="true"></i></div>
+          <div><div class="act-name">Morning walk</div><div class="act-time">Today · 7:15 AM</div></div>
+          <div class="act-stats"><div class="act-cal">210 kcal</div><div class="act-dur">35 min</div></div>
+        </div>
+        <div class="activity-row">
+          <div class="act-icon gym"><i class="ti ti-barbell" aria-hidden="true"></i></div>
+          <div><div class="act-name">Weight training</div><div class="act-time">Today · 12:30 PM</div></div>
+          <div class="act-stats"><div class="act-cal">380 kcal</div><div class="act-dur">50 min</div></div>
+        </div>
+        <div class="activity-row">
+          <div class="act-icon run"><i class="ti ti-run" aria-hidden="true"></i></div>
+          <div><div class="act-name">Evening run</div><div class="act-time">Sat · 6:00 PM</div></div>
+          <div class="act-stats"><div class="act-cal">450 kcal</div><div class="act-dur">40 min · 5 km</div></div>
+        </div>
+        <div class="activity-row">
+          <div class="act-icon bike"><i class="ti ti-bike" aria-hidden="true"></i></div>
+          <div><div class="act-name">Cycling</div><div class="act-time">Fri · 8:00 AM</div></div>
+          <div class="act-stats"><div class="act-cal">320 kcal</div><div class="act-dur">45 min</div></div>
+        </div>
+        <div class="activity-row">
+          <div class="act-icon gym"><i class="ti ti-barbell" aria-hidden="true"></i></div>
+          <div><div class="act-name">Upper body</div><div class="act-time">Thu · 1:00 PM</div></div>
+          <div class="act-stats"><div class="act-cal">280 kcal</div><div class="act-dur">45 min</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">Log activity</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Activity type</label>
+        <select id="act-type">
+          <option>Walking</option>
+          <option>Running</option>
+          <option>Cycling</option>
+          <option>Weight training</option>
+          <option>Yoga</option>
+          <option>Swimming</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Duration (min)</label>
+        <input type="number" id="act-dur" placeholder="30" min="1" />
+      </div>
+      <div class="form-group">
+        <label>Calories burned</label>
+        <input type="number" id="act-kcal" placeholder="200" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Distance (km) — optional</label>
+        <input type="number" id="act-dist" placeholder="5.0" min="0" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>Steps — optional</label>
+        <input type="number" id="act-steps" placeholder="3000" min="0" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveActivity()">Save activity</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Activity saved!</div>
+
+<script>
+  // Current date
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now = new Date();
+  function getWeekNumber(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  }
+  document.getElementById('current-date').textContent =
+    `${DAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()} · Week ${getWeekNumber(now)}`;
+
+  // Tab switching
+  function switchTab(el, tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    ['today','week','history'].forEach(id => {
+      document.getElementById('tab-' + id).style.display = id === tab ? '' : 'none';
+    });
+  }
+
+  // Modal
+  function openModal()  { document.getElementById('modal').classList.add('open'); }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  function closeModalOutside(e) { if (e.target.id === 'modal') closeModal(); }
+
+  // Activity icon map
+  const TYPE_CONFIG = {
+    'Walking':         { cls: 'walk', icon: 'ti-walk' },
+    'Running':         { cls: 'run',  icon: 'ti-run' },
+    'Cycling':         { cls: 'bike', icon: 'ti-bike' },
+    'Weight training': { cls: 'gym',  icon: 'ti-barbell' },
+    'Yoga':            { cls: 'gym',  icon: 'ti-heart' },
+    'Swimming':        { cls: 'walk', icon: 'ti-swimming' },
+    'Other':           { cls: 'gym',  icon: 'ti-activity' },
+  };
+
+  // Mutable totals
+  const STEP_GOAL = 10000;
+  const MIN_GOAL  = 80;
+  let totalSteps = 7420;
+  let totalMins  = 48;
+
+  function updateProgress() {
+    const stepPct = Math.min(100, Math.round((totalSteps / STEP_GOAL) * 100));
+    const minPct  = Math.min(100, Math.round((totalMins  / MIN_GOAL)  * 100));
+    document.getElementById('prog-steps').style.width = stepPct + '%';
+    document.getElementById('pct-steps').textContent  = stepPct + '%';
+    document.getElementById('prog-min').style.width   = minPct  + '%';
+    document.getElementById('pct-min').textContent    = minPct  + '%';
+    document.getElementById('steps-val').textContent  = totalSteps.toLocaleString();
+    document.getElementById('min-val').textContent    = totalMins;
+  }
+
+  function saveActivity() {
+    const type  = document.getElementById('act-type').value;
+    const dur   = parseInt(document.getElementById('act-dur').value);
+    const kcal  = parseInt(document.getElementById('act-kcal').value);
+    const dist  = parseFloat(document.getElementById('act-dist').value);
+    const steps = parseInt(document.getElementById('act-steps').value);
+
+    if (!dur || !kcal) { alert('Please enter duration and calories burned.'); return; }
+
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const info = TYPE_CONFIG[type] || TYPE_CONFIG['Other'];
+    const distStr = (!isNaN(dist) && dist > 0) ? ` · ${dist.toFixed(1)} km` : '';
+
+    const makeRow = (timeLabel) => `
+      <div class="activity-row">
+        <div class="act-icon ${info.cls}"><i class="ti ${info.icon}" aria-hidden="true"></i></div>
+        <div><div class="act-name">${type}</div><div class="act-time">${timeLabel}</div></div>
+        <div class="act-stats">
+          <div class="act-cal">${kcal} kcal</div>
+          <div class="act-dur">${dur} min${distStr}</div>
+        </div>
+      </div>`;
+
+    const todayRow = document.createElement('div');
+    todayRow.innerHTML = makeRow(time);
+    document.getElementById('activities-list').prepend(todayRow.firstElementChild);
+
+    const histRow = document.createElement('div');
+    histRow.innerHTML = makeRow(`Today · ${time}`);
+    document.getElementById('history-list').prepend(histRow.firstElementChild);
+
+    // Update totals
+    const calEl = document.getElementById('cal-val');
+    calEl.textContent = (parseInt(calEl.textContent.replace(/,/g, '')) + kcal).toLocaleString();
+    totalMins += dur;
+    if (!isNaN(steps) && steps > 0) totalSteps += steps;
+    updateProgress();
+
+    // Reset form
+    ['act-dur','act-kcal','act-dist','act-steps'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    closeModal();
+    showToast('Activity saved!');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
